@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -85,7 +86,7 @@ func (docker *Docker) ContainerCreate(application models.ApplicationConfig) (err
 		&container.Config{
 			Image:    application.Image,
 			Env:      getEnv(),
-			Hostname: fmt.Sprintf("%v.local.toolfor.dev", application.ContainerName),
+			Hostname: strings.ReplaceAll(fmt.Sprintf("%v.local.toolfor.dev", application.ContainerName), "_", "-"),
 		},
 		&container.HostConfig{
 			RestartPolicy: container.RestartPolicy{Name: "always"},

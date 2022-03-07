@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	encryptedModels "github.com/toolfordev/local-api-encrypted-variables/models"
+	globalModels "github.com/toolfordev/local-api-global-variables/models"
 	"github.com/toolfordev/local-cli/application/models"
 	"github.com/toolfordev/local-cli/infrastructure/docker"
 )
@@ -86,6 +88,47 @@ var toolForDevConfig models.ToolForDevFileConfig = models.ToolForDevFileConfig{
 						{
 							Application: "80",
 							External:    "14001",
+						},
+					},
+					EnvironmentVariables: []models.VariableConfig{
+						{
+							Name:   "EXTENDEDDB_TOOLFORDEV_TYPE",
+							Source: "project",
+						},
+						{
+							Name:   "EXTENDEDDB_TOOLFORDEV_HOST",
+							Source: "project",
+						},
+						{
+							Name:   "EXTENDEDDB_TOOLFORDEV_PORT",
+							Source: "project",
+						},
+						{
+							Name:   "EXTENDEDDB_TOOLFORDEV_SSL_MODE",
+							Source: "project",
+						},
+						{
+							Name:   "EXTENDEDDB_TOOLFORDEV_NAME",
+							Source: "project",
+						},
+						{
+							Name:   "EXTENDEDDB_TOOLFORDEV_USER",
+							Source: "project",
+						},
+						{
+							Name:   "EXTENDEDDB_TOOLFORDEV_PASSWORD",
+							Source: "project",
+						},
+					},
+				},
+				{
+					Name:        "local-api-encrypted-variables",
+					Description: "a toolfordev api for encrypted variables",
+					Image:       "quay.io/toolfordev/local-api-encrypted-variables:v1.0.0",
+					Ports: []models.PortConfig{
+						{
+							Application: "80",
+							External:    "14002",
 						},
 					},
 					EnvironmentVariables: []models.VariableConfig{
@@ -220,6 +263,8 @@ func loadConfigFile(configFile *models.ToolForDevFileConfig) {
 
 func loadConfigFileAdvanced(configFile *models.ToolForDevFileConfig) {
 	loadConfigFile(configFile)
+	var globalVariables []globalModels.GlobalVariable
+	var encryptedVariables []encryptedModels.EncryptedVariable
 	findVariableValueByName := func(name string) (value string) {
 		for i := range configFile.ToolForDev.Project.Variables {
 			if configFile.ToolForDev.Project.Variables[i].Name == name {
@@ -240,13 +285,32 @@ func loadConfigFileAdvanced(configFile *models.ToolForDevFileConfig) {
 	}
 	getVarValue := func(source, sourceName string) (value string) {
 		switch source {
+		case "global":
+			if len(globalVariables) > 0 {
+				for _, globalVariable := range globalVariables {
+					if sourceName == globalVariable.Name {
+						value = globalVariable.Value
+						return
+					}
+				}
+			}
+		case "encrypted":
+			if len(encryptedVariables) > 0 {
+				for _, encryptedVariable := range encryptedVariables {
+					if sourceName == encryptedVariable.Name {
+						value = encryptedVariable.Value
+						return
+					}
+				}
+			}
 		case "project":
 			value = findVariableValueByName(sourceName)
 			return
 		case "applicationHostname":
-			value = fmt.Sprintf("%v.local.toolfor.dev", findApplicationContainerNameByName(sourceName))
+			value = strings.ReplaceAll(fmt.Sprintf("%v.local.toolfor.dev", findApplicationContainerNameByName(sourceName)), "_", "-")
 			return
 		}
+
 		return
 	}
 	for i := range configFile.ToolForDev.Project.Variables {
