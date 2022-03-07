@@ -3,7 +3,6 @@ package docker
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -62,7 +61,7 @@ func (docker *Docker) ImageIsReady(name string) (isReady bool, err error) {
 	return
 }
 
-func (docker *Docker) ContainerCreate(application models.ApplicationConfig) (err error) {
+func (docker *Docker) ContainerCreate(networkName string, application models.ApplicationConfig) (err error) {
 	getEnv := func() []string {
 		envs := make([]string, len(application.EnvironmentVariables))
 		for i, environmentVariable := range application.EnvironmentVariables {
@@ -75,7 +74,7 @@ func (docker *Docker) ContainerCreate(application models.ApplicationConfig) (err
 	for _, port := range application.Ports {
 		portBindings[nat.Port(fmt.Sprintf("%v/%v", port.Application, port.Protocol))] = []nat.PortBinding{
 			{
-				HostIP:   "0.0.0.0",
+				//HostIP:   "localhost",
 				HostPort: port.External,
 			},
 		}
@@ -84,13 +83,14 @@ func (docker *Docker) ContainerCreate(application models.ApplicationConfig) (err
 	_, err = docker.client.ContainerCreate(
 		context.Background(),
 		&container.Config{
-			Image:    application.Image,
-			Env:      getEnv(),
-			Hostname: strings.ReplaceAll(fmt.Sprintf("%v.local.toolfor.dev", application.ContainerName), "_", "-"),
+			Image: application.Image,
+			Env:   getEnv(),
+			//Hostname: strings.ReplaceAll(fmt.Sprintf("%v.local.toolfor.dev", application.ContainerName), "_", "-"),
 		},
 		&container.HostConfig{
 			RestartPolicy: container.RestartPolicy{Name: "always"},
 			PortBindings:  portBindings,
+			NetworkMode:   container.NetworkMode(networkName),
 		},
 		nil,
 		nil,

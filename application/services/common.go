@@ -55,7 +55,7 @@ var toolForDevConfig models.ToolForDevFileConfig = models.ToolForDevFileConfig{
 					Ports: []models.PortConfig{
 						{
 							Application: "5432",
-							External:    "14432",
+							External:    "14001",
 						},
 					},
 					EnvironmentVariables: []models.VariableConfig{
@@ -83,51 +83,10 @@ var toolForDevConfig models.ToolForDevFileConfig = models.ToolForDevFileConfig{
 				{
 					Name:        "local-api-global-variables",
 					Description: "a toolfordev api for global variables",
-					Image:       "quay.io/toolfordev/local-api-global-variables:v1.0.11",
+					Image:       "quay.io/toolfordev/local-api-global-variables:v1.0.13",
 					Ports: []models.PortConfig{
 						{
-							Application: "80",
-							External:    "14001",
-						},
-					},
-					EnvironmentVariables: []models.VariableConfig{
-						{
-							Name:   "EXTENDEDDB_TOOLFORDEV_TYPE",
-							Source: "project",
-						},
-						{
-							Name:   "EXTENDEDDB_TOOLFORDEV_HOST",
-							Source: "project",
-						},
-						{
-							Name:   "EXTENDEDDB_TOOLFORDEV_PORT",
-							Source: "project",
-						},
-						{
-							Name:   "EXTENDEDDB_TOOLFORDEV_SSL_MODE",
-							Source: "project",
-						},
-						{
-							Name:   "EXTENDEDDB_TOOLFORDEV_NAME",
-							Source: "project",
-						},
-						{
-							Name:   "EXTENDEDDB_TOOLFORDEV_USER",
-							Source: "project",
-						},
-						{
-							Name:   "EXTENDEDDB_TOOLFORDEV_PASSWORD",
-							Source: "project",
-						},
-					},
-				},
-				{
-					Name:        "local-api-encrypted-variables",
-					Description: "a toolfordev api for encrypted variables",
-					Image:       "quay.io/toolfordev/local-api-encrypted-variables:v1.0.0",
-					Ports: []models.PortConfig{
-						{
-							Application: "80",
+							Application: "14000",
 							External:    "14002",
 						},
 					},
@@ -162,6 +121,47 @@ var toolForDevConfig models.ToolForDevFileConfig = models.ToolForDevFileConfig{
 						},
 					},
 				},
+				// {
+				// 	Name:        "local-api-encrypted-variables",
+				// 	Description: "a toolfordev api for encrypted variables",
+				// 	Image:       "quay.io/toolfordev/local-api-encrypted-variables:v1.0.0",
+				// 	Ports: []models.PortConfig{
+				// 		{
+				// 			Application: "80",
+				// 			External:    "14002",
+				// 		},
+				// 	},
+				// 	EnvironmentVariables: []models.VariableConfig{
+				// 		{
+				// 			Name:   "EXTENDEDDB_TOOLFORDEV_TYPE",
+				// 			Source: "project",
+				// 		},
+				// 		{
+				// 			Name:   "EXTENDEDDB_TOOLFORDEV_HOST",
+				// 			Source: "project",
+				// 		},
+				// 		{
+				// 			Name:   "EXTENDEDDB_TOOLFORDEV_PORT",
+				// 			Source: "project",
+				// 		},
+				// 		{
+				// 			Name:   "EXTENDEDDB_TOOLFORDEV_SSL_MODE",
+				// 			Source: "project",
+				// 		},
+				// 		{
+				// 			Name:   "EXTENDEDDB_TOOLFORDEV_NAME",
+				// 			Source: "project",
+				// 		},
+				// 		{
+				// 			Name:   "EXTENDEDDB_TOOLFORDEV_USER",
+				// 			Source: "project",
+				// 		},
+				// 		{
+				// 			Name:   "EXTENDEDDB_TOOLFORDEV_PASSWORD",
+				// 			Source: "project",
+				// 		},
+				// 	},
+				// },
 			},
 		},
 	},
@@ -204,18 +204,14 @@ func startConfigFile(configFile models.ToolForDevFileConfig) (err error) {
 				return
 			}
 		}
-		err = dockerClient.ContainerCreate(application)
+		err = dockerClient.ContainerCreate(configFile.ToolForDev.Project.NetworkName, application)
 		if err != nil {
 			return
 		}
-		err = dockerClient.ContainerStart(application)
-		if err != nil {
-			return
-		}
-		err = dockerClient.NetworkConnect(configFile.ToolForDev.Project.NetworkName, application.ContainerName)
-		if err != nil {
-			return
-		}
+		// err = dockerClient.ContainerStart(application)
+		// if err != nil {
+		// 	return
+		// }
 	}
 	return
 }
@@ -307,7 +303,8 @@ func loadConfigFileAdvanced(configFile *models.ToolForDevFileConfig) {
 			value = findVariableValueByName(sourceName)
 			return
 		case "applicationHostname":
-			value = strings.ReplaceAll(fmt.Sprintf("%v.local.toolfor.dev", findApplicationContainerNameByName(sourceName)), "_", "-")
+			//value = strings.ReplaceAll(fmt.Sprintf("%v.local.toolfor.dev", findApplicationContainerNameByName(sourceName)), "_", "-")
+			value = findApplicationContainerNameByName(sourceName)
 			return
 		}
 
